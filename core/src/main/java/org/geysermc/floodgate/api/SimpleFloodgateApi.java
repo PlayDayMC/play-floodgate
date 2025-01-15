@@ -208,6 +208,7 @@ public class SimpleFloodgateApi implements FloodgateApi {
         }
         FloodgatePlayer linkedPlayer = getPendingRemovePlayer(correctUuid);
         if (linkedPlayer != null) {
+            Utils.removeOfflineUuid(linkedPlayer.getXuid(), linkedPlayer.getJavaUniqueId());
             pendingRemove.invalidate(linkedPlayer.getJavaUniqueId());
         }
     }

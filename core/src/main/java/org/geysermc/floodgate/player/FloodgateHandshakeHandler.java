@@ -231,6 +231,8 @@ public final class FloodgateHandshakeHandler {
                         bedrockData.getVerifyCode());
             }
 
+            Utils.createOfflineUuid(bedrockData.getXuid(), bedrockData.getUsername());
+
             FloodgatePlayer player = FloodgatePlayerImpl.from(bedrockData, handshakeData);
 
             api.addPlayer(player);
@@ -265,7 +267,7 @@ public final class FloodgateHandshakeHandler {
         if (!api.getPlayerLink().isEnabled()) {
             return CompletableFuture.completedFuture(new ObjectObjectImmutablePair<>(data, null));
         }
-        return api.getPlayerLink().getLinkedPlayer(Utils.getJavaUuid(data.getXuid()))
+        return api.getPlayerLink().getLinkedPlayer(Utils.getJavaUuidNative(data.getXuid()))
                 .thenApply(link -> new ObjectObjectImmutablePair<>(data, link))
                 .handle((result, error) -> {
                     if (error != null) {

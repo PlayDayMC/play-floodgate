@@ -36,14 +36,20 @@ import java.io.StringWriter;
 import java.lang.annotation.Annotation;
 import java.nio.charset.StandardCharsets;
 import java.util.Locale;
+import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
+import org.geysermc.floodgate.api.FloodgateApi;
 
 public class Utils {
+
+    private static final Map<Long, UUID> OFFLINE_UUIDS = new ConcurrentHashMap<>();
+
     private static final Pattern NON_UNIQUE_PREFIX = Pattern.compile("^\\w{0,16}$");
     private static final Pattern DATABASE_NAME = Pattern.compile(Constants.DATABASE_NAME_FORMAT);
     public static final int MAX_DEBUG_PACKET_COUNT = 25;
@@ -66,6 +72,7 @@ public class Utils {
 
     /**
      * Reads a properties resource file
+     *
      * @param resourceFile the resource file to read
      * @return the properties file if the resource exists, otherwise null
      * @throws AssertionError if something went wrong while readin the resource file
@@ -87,12 +94,34 @@ public class Utils {
         return locale.getLanguage() + "_" + locale.getCountry();
     }
 
+    public static void createOfflineUuid(String xuid, String username) {
+        UUID offlineUuid = getOfflineUuid(FloodgateApi.getInstance().getPlayerPrefix() + username);
+        OFFLINE_UUIDS.put(Long.parseLong(xuid), offlineUuid);
+    }
+
+    public static void removeOfflineUuid(String xuid, UUID uuid) {
+        OFFLINE_UUIDS.remove(Long.parseLong(xuid), uuid);
+    }
+
+    public static UUID getOfflineUuid(String username) {
+        return UUID.nameUUIDFromBytes(("OfflinePlayer:" + username).getBytes(StandardCharsets.UTF_8));
+    }
+
     public static UUID getJavaUuid(long xuid) {
-        return new UUID(0, xuid);
+        UUID uuid = OFFLINE_UUIDS.get(xuid);
+        return uuid != null ? uuid : getJavaUuidNative(xuid);
     }
 
     public static UUID getJavaUuid(String xuid) {
         return getJavaUuid(Long.parseLong(xuid));
+    }
+
+    public static UUID getJavaUuidNative(long xuid) {
+        return new UUID(0, xuid);
+    }
+
+    public static UUID getJavaUuidNative(String xuid) {
+        return getJavaUuidNative(Long.parseLong(xuid));
     }
 
     public static boolean isUniquePrefix(String prefix) {
@@ -124,24 +153,24 @@ public class Utils {
     }
 
     /**
-     * Returns a set of all the classes that are annotated by a given annotation.
-     * Keep in mind that these are from a set of generated annotations generated
-     * at compile time by the annotation processor, meaning that arbitrary annotations
-     * cannot be passed into this method and expected to get a set of classes back.
+     * Returns a set of all the classes that are annotated by a given annotation. Keep in mind that
+     * these are from a set of generated annotations generated at compile time by the annotation
+     * processor, meaning that arbitrary annotations cannot be passed into this method and expected
+     * to get a set of classes back.
      *
      * @param annotationClass the annotation class
      * @return a set of all the classes annotated by the given annotation
      */
-    public static Set<Class<?>> getGeneratedClassesForAnnotation(Class<? extends Annotation> annotationClass) {
+    public static Set<Class<?>> getGeneratedClassesForAnnotation(
+            Class<? extends Annotation> annotationClass) {
         return getGeneratedClassesForAnnotation(annotationClass.getName());
     }
 
     /**
-     * Returns a set of all the classes that are annotated by a given annotation.
-     * Keep in mind that these are from a set of generated annotations generated
-     * at compile time by the annotation processor, meaning that arbitrary annotations
-     * cannot be passed into this method and expected to have a set of classes
-     * returned back.
+     * Returns a set of all the classes that are annotated by a given annotation. Keep in mind that
+     * these are from a set of generated annotations generated at compile time by the annotation
+     * processor, meaning that arbitrary annotations cannot be passed into this method and expected
+     * to have a set of classes returned back.
      *
      * @param input the fully qualified name of the annotation
      * @return a set of all the classes annotated by the given annotation
